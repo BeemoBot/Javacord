@@ -40,11 +40,7 @@ public abstract class ApplicationCommandBuilderDelegateImpl<T extends Applicatio
 
     @Override
     public CompletableFuture<T> createForServer(Server server) {
-        return new RestRequest<T>(
-                server.getApi(), RestMethod.POST, RestEndpoint.SERVER_APPLICATION_COMMANDS)
-                .setUrlParameters(String.valueOf(server.getApi().getClientId()), server.getIdAsString())
-                .setBody(getJsonBodyForApplicationCommand())
-                .execute(result -> createInstance((DiscordApiImpl) server.getApi(), result.getJsonBody()));
+        return createForServer(server.getApi(), server.getId());
     }
 
     @Override
