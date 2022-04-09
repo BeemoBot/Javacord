@@ -56,14 +56,19 @@ public class MessageContextMenuUpdaterDelegateImpl extends ApplicationCommandUpd
 
     @Override
     public CompletableFuture<MessageContextMenu> updateForServer(Server server) {
+        return updateForServer(server.getApi(), server.getId());
+    }
+
+    @Override
+    public CompletableFuture<MessageContextMenu> updateForServer(DiscordApi api, long server) {
         ObjectNode body = JsonNodeFactory.instance.objectNode();
         prepareBody(body);
 
-        return new RestRequest<MessageContextMenu>(server.getApi(), RestMethod.PATCH,
+        return new RestRequest<MessageContextMenu>(api, RestMethod.PATCH,
                 RestEndpoint.SERVER_APPLICATION_COMMANDS)
-                .setUrlParameters(String.valueOf(server.getApi().getClientId()),
-                        server.getIdAsString(), String.valueOf(commandId))
+                .setUrlParameters(String.valueOf(api.getClientId()),
+                        String.valueOf(server), String.valueOf(commandId))
                 .setBody(body)
-                .execute(result -> new MessageContextMenuImpl((DiscordApiImpl) server.getApi(), result.getJsonBody()));
+                .execute(result -> new MessageContextMenuImpl((DiscordApiImpl) api, result.getJsonBody()));
     }
 }

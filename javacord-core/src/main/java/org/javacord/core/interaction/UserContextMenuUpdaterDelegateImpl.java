@@ -46,14 +46,19 @@ public class UserContextMenuUpdaterDelegateImpl extends ApplicationCommandUpdate
 
     @Override
     public CompletableFuture<UserContextMenu> updateForServer(Server server) {
+        return updateForServer(server.getApi(), server.getId());
+    }
+
+    @Override
+    public CompletableFuture<UserContextMenu> updateForServer(DiscordApi api, long server) {
         ObjectNode body = JsonNodeFactory.instance.objectNode();
         prepareBody(body);
 
-        return new RestRequest<UserContextMenu>(server.getApi(), RestMethod.PATCH,
+        return new RestRequest<UserContextMenu>(api, RestMethod.PATCH,
                 RestEndpoint.SERVER_APPLICATION_COMMANDS)
-                .setUrlParameters(String.valueOf(server.getApi().getClientId()),
-                        server.getIdAsString(), String.valueOf(commandId))
+                .setUrlParameters(String.valueOf(api.getClientId()),
+                        String.valueOf(server), String.valueOf(commandId))
                 .setBody(body)
-                .execute(result -> new UserContextMenuImpl((DiscordApiImpl) server.getApi(), result.getJsonBody()));
+                .execute(result -> new UserContextMenuImpl((DiscordApiImpl) api, result.getJsonBody()));
     }
 }
