@@ -36,4 +36,13 @@ public interface ApplicationCommandUpdaterDelegate<T extends ApplicationCommand>
      * @return A future with the updated application command to check if the update was successful.
      */
     CompletableFuture<T> updateForServer(Server server);
+
+    /**
+     * Performs the queued update.
+     *
+     * @param api The DiscordApi.
+     * @param server The server where the command should be updated.
+     * @return A future with the updated application command to check if the update was successful.
+     */
+    CompletableFuture<T> updateForServer(DiscordApi api, long server);
 }
