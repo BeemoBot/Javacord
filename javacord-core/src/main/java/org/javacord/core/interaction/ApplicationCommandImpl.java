@@ -107,8 +107,13 @@ public abstract class ApplicationCommandImpl implements ApplicationCommand {
 
     @Override
     public CompletableFuture<Void> deleteForServer(Server server) {
+        return deleteForServer(server.getId());
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteForServer(long server) {
         return new RestRequest<Void>(getApi(), RestMethod.DELETE, RestEndpoint.SERVER_APPLICATION_COMMANDS)
-                .setUrlParameters(String.valueOf(getApplicationId()), server.getIdAsString(), getIdAsString())
+                .setUrlParameters(String.valueOf(getApplicationId()), String.valueOf(server), getIdAsString())
                 .execute(result -> null);
     }
 }

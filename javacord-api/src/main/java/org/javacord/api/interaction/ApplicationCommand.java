@@ -91,4 +91,12 @@ public interface ApplicationCommand extends DiscordEntity, Specializable<Applica
      * @return A future to check if the deletion was successful.
      */
     CompletableFuture<Void> deleteForServer(Server server);
+
+    /**
+     * Deletes this application command globally.
+     *
+     * @param server The server where the command should be deleted from.
+     * @return A future to check if the deletion was successful.
+     */
+    CompletableFuture<Void> deleteForServer(long server);
 }
