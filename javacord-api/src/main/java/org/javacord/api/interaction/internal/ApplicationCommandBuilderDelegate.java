@@ -38,4 +38,13 @@ public interface ApplicationCommandBuilderDelegate<T extends ApplicationCommand>
      */
     CompletableFuture<T> createForServer(Server server);
 
+    /**
+     * Creates an application command for a specific server.
+     *
+     * @param api The discord api instance.
+     * @param server The server.
+     * @return The built application command.
+     */
+    CompletableFuture<T> createForServer(DiscordApi api, long server);
+
 }

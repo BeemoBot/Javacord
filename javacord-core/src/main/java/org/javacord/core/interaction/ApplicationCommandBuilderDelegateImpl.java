@@ -47,6 +47,15 @@ public abstract class ApplicationCommandBuilderDelegateImpl<T extends Applicatio
                 .execute(result -> createInstance((DiscordApiImpl) server.getApi(), result.getJsonBody()));
     }
 
+    @Override
+    public CompletableFuture<T> createForServer(DiscordApi api, long server) {
+        return new RestRequest<T>(
+                api, RestMethod.POST, RestEndpoint.SERVER_APPLICATION_COMMANDS)
+                .setUrlParameters(String.valueOf(api.getClientId()), String.valueOf(server))
+                .setBody(getJsonBodyForApplicationCommand())
+                .execute(result -> createInstance((DiscordApiImpl) api, result.getJsonBody()));
+    }
+
     /**
      * Gets the JSON body for this application command.
      *
