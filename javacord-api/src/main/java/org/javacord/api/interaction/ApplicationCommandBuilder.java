@@ -71,4 +71,18 @@ public abstract class ApplicationCommandBuilder<R extends ApplicationCommand,
         return delegate.createForServer(server);
     }
 
+
+    /**
+     * Creates an application command for a specific server.
+     * When used to create multiple server application commands at once
+     * {@link DiscordApi#bulkOverwriteServerApplicationCommands(Server, List)} should be used instead.
+     *
+     * @param api The discord api instance.
+     * @param server The server.
+     * @return The built application command.
+     */
+    public CompletableFuture<R> createForServer(DiscordApi api, long server) {
+        return delegate.createForServer(api, server);
+    }
+
 }
