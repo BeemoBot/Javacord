@@ -20,7 +20,7 @@ public abstract class ApplicationCommandImpl implements ApplicationCommand {
     private final boolean defaultPermission;
     private final String description;
 
-    private final Server server;
+    private final long server;
 
     /**
      * Class constructor.
@@ -36,8 +36,8 @@ public abstract class ApplicationCommandImpl implements ApplicationCommand {
         description = data.get("description").asText();
         defaultPermission = !data.hasNonNull("default_permission") || data.get("default_permission").asBoolean();
         server = data.has("guild_id")
-                ? api.getPossiblyUnreadyServerById(data.get("guild_id").asLong()).orElseThrow(AssertionError::new)
-                : null;
+                ? data.get("guild_id").asLong()
+                : 0L;
     }
 
     @Override
@@ -71,18 +71,31 @@ public abstract class ApplicationCommandImpl implements ApplicationCommand {
     }
 
     @Override
+    public Optional<Long> getServerId() {
+        if (!isServerApplicationCommand()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(server);
+    }
+
+    @Override
     public Optional<Server> getServer() {
-        return Optional.ofNullable(server);
+        if (!isServerApplicationCommand()) {
+            return Optional.empty();
+        }
+
+        return api.getPossiblyUnreadyServerById(server);
     }
 
     @Override
     public boolean isGlobalApplicationCommand() {
-        return server == null;
+        return server == 0L;
     }
 
     @Override
     public boolean isServerApplicationCommand() {
-        return server != null;
+        return server != 0L;
     }
 
     @Override

@@ -52,6 +52,13 @@ public interface ApplicationCommand extends DiscordEntity, Specializable<Applica
     boolean getDefaultPermission();
 
     /**
+     * Gets the server id of this command if it is not global.
+     *
+     * @return The server of this command.
+     */
+    Optional<Long> getServerId();
+
+    /**
      * Gets the server of this command if it is not global.
      *
      * @return The server of this command.

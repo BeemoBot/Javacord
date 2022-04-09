@@ -286,6 +286,21 @@ public interface DiscordApi extends GloballyAttachableListenerManager {
             List<? extends ApplicationCommandBuilder<?, ?, ?>> applicationCommandBuilderList);
 
     /**
+     * Bulk overwrites the servers application commands.
+     * This should be preferably used when updating and/or creating multiple
+     * application commands at once instead of {@link ApplicationCommandUpdater#updateForServer(Server)}
+     * and {@link ApplicationCommandBuilder#createForServer(Server)}
+     *
+     * @param applicationCommandBuilderList A list containing the ApplicationCommandBuilders.
+     * @param server                        The server where the bulk overwrite should be performed on
+     *                                      which should be used to perform the bulk overwrite.
+     * @return A list containing all application commands.
+     */
+    CompletableFuture<List<ApplicationCommand>> bulkOverwriteServerApplicationCommands(
+            long server,
+            List<? extends ApplicationCommandBuilder<?, ?, ?>> applicationCommandBuilderList);
+
+    /**
      * Gets a utility class to interact with uncached messages.
      *
      * @return A utility class to interact with uncached messages.
