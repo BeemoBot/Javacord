@@ -14,6 +14,11 @@ dependencies {
     // For old @Generated annotation in Java 9
     // can be replaced by javax.annotation.processing.Generated if Java 9 is minimum requirement
     compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+
+    // the JSON-lib because Discord returns in JSON format
+    // Update when upgrading to Java 11+
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.12.7.1")
 }
 
 java {

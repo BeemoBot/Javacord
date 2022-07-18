@@ -15,10 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -89,6 +86,8 @@ public abstract class EventDispatcherBase {
      */
     private final Map<AtomicReference<Future<?>>, Long> alreadyCanceledListeners = new ConcurrentHashMap<>();
 
+    private final ExecutorService dispatchExecutor;
+
     /**
      * Creates a new event dispatcher.
      *
@@ -96,6 +95,7 @@ public abstract class EventDispatcherBase {
      */
     protected EventDispatcherBase(DiscordApiImpl api) {
         this.api = api;
+        this.dispatchExecutor = api.getThreadPool().getSingleThreadExecutorService("Event Dispatch Queues Manager");
 
         api.getThreadPool().getScheduler().scheduleWithFixedDelay(() -> {
             try {
@@ -242,7 +242,7 @@ public abstract class EventDispatcherBase {
             return;
         }
 
-        api.getThreadPool().getSingleThreadExecutorService("Event Dispatch Queues Manager").submit(() -> {
+        this.dispatchExecutor.submit(() -> {
             if (queueSelector != null) { // Object dependent listeners
                 // Don't allow adding of more events while there are unfinished object independent tasks
                 Queue<Runnable> objectIndependentQueue = queuedListenerTasks.get(null);

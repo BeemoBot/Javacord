@@ -53,6 +53,7 @@ import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.UserContextMenu;
 import org.javacord.api.listener.GloballyAttachableListener;
 import org.javacord.api.listener.ObjectAttachableListener;
+import org.javacord.api.listener.RawPacketHandler;
 import org.javacord.api.util.auth.Authenticator;
 import org.javacord.api.util.concurrent.ThreadPool;
 import org.javacord.api.util.event.ListenerManager;
@@ -417,6 +418,13 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
     private final Map<Class<?>, Map<Long, Map<Class<? extends ObjectAttachableListener>,
             Map<ObjectAttachableListener, ListenerManagerImpl<? extends ObjectAttachableListener>>>>>
             objectListeners = Collections.synchronizedMap(new ConcurrentHashMap<>());
+
+    /**
+     * A map containing the listeners for raw gateway events of a given type.
+     * NOTE: This doesn't have any thread safety as of now for performance reasons. It is expected
+     *       that raw listeners are populated _before_ starting the DiscordWebSocketAdapter.
+     */
+    private final Map<String, List<RawPacketHandler>> rawPacketListeners = new HashMap<>();
 
     /**
      * Creates a new discord api instance that can be used for auto-ratelimited REST calls,
@@ -1243,6 +1251,18 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
         } finally {
             messageCacheLock.unlock();
         }
+    }
+
+    @Override
+    public void addRawListener(String type, RawPacketHandler handler) {
+        if (!rawPacketListeners.containsKey(type)) {
+            rawPacketListeners.put(type, new ArrayList<>());
+        }
+        rawPacketListeners.get(type).add(handler);
+    }
+
+    public Map<String, List<RawPacketHandler>> getRawListeners() {
+        return rawPacketListeners;
     }
 
     /**

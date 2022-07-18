@@ -22,6 +22,7 @@ import org.javacord.api.entity.user.User;
 import org.javacord.api.event.connection.LostConnectionEvent;
 import org.javacord.api.event.connection.ReconnectEvent;
 import org.javacord.api.event.connection.ResumeEvent;
+import org.javacord.api.listener.RawPacketHandler;
 import org.javacord.api.util.auth.Authenticator;
 import org.javacord.api.util.auth.Request;
 import org.javacord.core.DiscordApiImpl;
@@ -138,6 +139,7 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
 
     private final DiscordApiImpl api;
     private final HashMap<String, PacketHandler> handlers = new HashMap<>();
+    private final ExecutorService rawHandlerExecutor;
     private final CompletableFuture<Boolean> ready = new CompletableFuture<>();
 
     private final AtomicReference<WebSocket> websocket = new AtomicReference<>();
@@ -198,6 +200,8 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
 
         registerHandlers();
         connect();
+
+        rawHandlerExecutor = api.getThreadPool().getSingleDaemonThreadExecutorService("Raw Handlers Processor");
 
         ExecutorService requestGuildMembersQueueConsumer =
                 api.getThreadPool().getSingleDaemonThreadExecutorService("Request Server Members Queue Consumer");
@@ -566,9 +570,25 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
             case DISPATCH:
                 lastSeq = packet.get("s").asInt();
                 String type = packet.get("t").asText();
+                JsonNode packetData = packet.get("d");
+
+                List<RawPacketHandler> additionalHandlers = api.getRawListeners().get(type);
+                if (additionalHandlers != null) {
+                    for (RawPacketHandler h : additionalHandlers) {
+                        rawHandlerExecutor.submit(() -> {
+                            try {
+                                h.handle(api, type, packetData);
+                            } catch (Throwable t) {
+                                logger.warn("Unhandled exception in a raw packet handler of type {} (packet: {})",
+                                        type, packet, t);
+                            }
+                        });
+                    }
+                }
+
                 PacketHandler handler = handlers.get(type);
                 if (handler != null) {
-                    handler.handlePacket(packet.get("d"));
+                    handler.handlePacket(packetData);
                 } else {
                     logger.debug("Received unknown packet of type {} (packet: {})", type, packet);
                 }
@@ -599,9 +619,9 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
                     } finally {
                         reconnectingOrResumingLock.unlock();
                     }
-                    sessionId = packet.get("d").get("session_id").asText();
-                    resumeUrl = packet.get("d").hasNonNull("resume_gateway_url")
-                            ? packet.get("d").get("resume_gateway_url").asText() : null;
+                    sessionId = packetData.get("session_id").asText();
+                    resumeUrl = packetData.hasNonNull("resume_gateway_url")
+                            ? packetData.get("resume_gateway_url").asText() : null;
                     // Discord sends us GUILD_CREATE packets after logging in. We will wait for them.
                     api.getThreadPool().getSingleThreadExecutorService("Startup Servers Wait Thread").submit(() -> {
                         boolean allUsersLoaded = false;

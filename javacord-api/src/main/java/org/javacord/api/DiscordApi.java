@@ -46,6 +46,7 @@ import org.javacord.api.interaction.ServerApplicationCommandPermissions;
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.UserContextMenu;
 import org.javacord.api.listener.GloballyAttachableListenerManager;
+import org.javacord.api.listener.RawPacketHandler;
 import org.javacord.api.util.DiscordRegexPattern;
 import org.javacord.api.util.concurrent.ThreadPool;
 import org.javacord.api.util.ratelimit.LocalRatelimiter;
@@ -2262,4 +2263,14 @@ public interface DiscordApi extends GloballyAttachableListenerManager {
             return Optional.empty();
         }
     }
+
+    /**
+     * Registers a raw packet handler which is called with the raw packet data
+     * whenever discord emits an event of the given type.
+     *
+     * @param type    The type of packet the listener handles.
+     * @param handler The event listener.
+     */
+    void addRawListener(String type, RawPacketHandler handler);
+
 }
