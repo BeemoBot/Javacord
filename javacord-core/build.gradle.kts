@@ -1,8 +1,5 @@
-import aQute.bnd.version.MavenVersion.parseMavenString
-
 plugins {
     `java-library`
-    id("biz.aQute.bnd.builder") version "6.2.0"
 }
 
 repositories {
@@ -47,28 +44,4 @@ dependencies {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-tasks.jar {
-    bundle {
-        val version by archiveVersion
-        val osgiVersion = "${parseMavenString(version).osGiVersion}"
-        bnd(
-            mapOf(
-                "Fragment-Host" to "org.javacord.api;bundle-version=\"[$osgiVersion,$osgiVersion]\"",
-                "Import-Package" to listOf(
-                    "!org.javacord.api.*",
-                    "*"
-                ).joinToString(),
-                // work-around for https://github.com/bndtools/bnd/issues/2227
-                "-fixupmessages" to listOf(
-                    """^Classes found in the wrong directory:""",
-                    """\\{META-INF/versions/9/org/javacord/core/entity/message/MessageSetImpl$1.class=org.javacord.core.entity.message.MessageSetImpl$1,""",
-                    """META-INF/versions/9/module-info.class=module-info,""",
-                    """META-INF/versions/9/org/javacord/core/entity/message/MessageSetImpl.class=org.javacord.core.entity.message.MessageSetImpl,""",
-                    """META-INF/versions/9/org/javacord/core/entity/message/MessageSetImpl$2.class=org.javacord.core.entity.message.MessageSetImpl$2}$"""
-                ).joinToString(" ")
-            )
-        )
-    }
 }

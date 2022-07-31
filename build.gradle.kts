@@ -1,7 +1,6 @@
 plugins {
     `java-library`
     `maven-publish`
-    signing
     id("com.github.johnrengelman.shadow") version "2.0.4" apply false
     id("net.researchgate.release") version "2.7.0" apply false
 }
@@ -51,7 +50,6 @@ configure<PublishingExtension> {
 
         apply(plugin = "java-library")
         apply(plugin = "maven-publish")
-        apply(plugin = "signing")
 
         publishing {
             publications {
@@ -104,28 +102,6 @@ configure<PublishingExtension> {
                     }
                 }
             }
-
-            repositories {
-                maven {
-                    name = "OSSRH"
-                    url = if (isReleaseVersion) {
-                        uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                    } else {
-                        uri("https://oss.sonatype.org/content/repositories/snapshots/")
-                    }
-                    credentials {
-                        username = System.getenv("MAVEN_USERNAME")
-                        password = System.getenv("MAVEN_PASSWORD")
-                    }
-                }
-            }
-        }
-
-        signing {
-            val signingKey = System.getenv("SIGNING_KEY")
-            val signingPassword = System.getenv("SIGNING_PASSWORD")
-            useInMemoryPgpKeys(signingKey, signingPassword)
-            sign(publishing.publications["javacord"])
         }
     }
 }
