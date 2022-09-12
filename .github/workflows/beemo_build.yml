@@ -1,0 +1,23 @@
+name: Github Packages
+on:
+  push
+jobs:
+  publish:
+    name: Publish Repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Publish
+        run: ./gradlew test publish
+        env:
+          MAVEN_USERNAME: ${{ secrets.GITHUB_ACTOR }}
+          MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}

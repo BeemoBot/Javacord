@@ -61,6 +61,8 @@ configure<PublishingExtension> {
         publishing {
             publications {
                 create<MavenPublication>("javacord") {
+                    groupId = "beemo"
+                    version = (System.getenv("GITHUB_SHA") ?: "").take(7)
                     pom {
                         name.set(rootProject.name.capitalize() + (if (project.parent != null) " (${project.ext.get("shortName")})" else ""))
                         description.set(project.description)
@@ -112,12 +114,8 @@ configure<PublishingExtension> {
 
             repositories {
                 maven {
-                    name = "OSSRH"
-                    url = if (isReleaseVersion) {
-                        uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                    } else {
-                        uri("https://oss.sonatype.org/content/repositories/snapshots/")
-                    }
+                    name = "github"
+                    url = uri("https://maven.pkg.github.com/BeemoBot/Javacord")
                     credentials {
                         username = System.getenv("MAVEN_USERNAME")
                         password = System.getenv("MAVEN_PASSWORD")
