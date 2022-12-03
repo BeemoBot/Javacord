@@ -45,7 +45,6 @@ public class ThreadMembersUpdateHandler extends PacketHandler {
                 .orElse(null);
 
         if (thread == null) {
-            logger.warn("Unable to find thread with id {}", channelId);
             return;
         }
 

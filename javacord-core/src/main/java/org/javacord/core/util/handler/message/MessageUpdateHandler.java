@@ -73,8 +73,6 @@ public class MessageUpdateHandler extends PacketHandler {
         // We need a message to dispatch any event so we either need a cached message to update
         // or else we must be able to construct a new message from this event
         if (!cachedMessage.isPresent() && !isCompleteMessagePacket(packet)) {
-            logger.debug("Received a message update event for an uncached message that contains not enough "
-                    + "data to construct a new message in channel {}. Packet: {}", channelId, packet);
             return;
         }
 

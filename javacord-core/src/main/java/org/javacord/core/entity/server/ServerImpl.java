@@ -428,14 +428,10 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
                         break;
                     case SERVER_NEWS_CHANNEL:
                         // TODO Handle server news channel differently
-                        logger.debug("{} has a news channel. In this Javacord version it is treated as a normal "
-                                + "text channel!", this);
                         getOrCreateServerTextChannel(channel);
                         break;
                     case SERVER_STORE_CHANNEL:
                         // TODO Handle store channels
-                        logger.debug("{} has a store channel. These are not supported in this Javacord version"
-                                + " and get ignored!", this);
                         break;
                     default: {
                         try {
@@ -464,8 +460,6 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
                     case SERVER_NEWS_THREAD:
                         getOrCreateServerThreadChannel(channel);
                         break;
-                    default:
-                        logger.warn("Unknown or unexpected channel type. Your Javacord version might be outdated!");
                 }
             }
         }
@@ -587,9 +581,6 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
     }
 
     private void showFallbackWarningMessage(int channelType, String fallbackName) {
-        logger.warn("Encountered not handled channel type: {}. "
-                        + "Trying to use the {} fallback implementation",
-                channelType, fallbackName);
     }
 
     /**
@@ -614,9 +605,6 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
         try {
             serverFeatures.add(ServerFeature.valueOf(feature));
         } catch (Exception ignored) {
-            logger.debug("Encountered server with unknown feature {}. Please update to the latest "
-                    + "Javacord version or create an issue on the Javacord GitHub page if you are "
-                    + "already on the latest version.", feature);
         }
     }
 

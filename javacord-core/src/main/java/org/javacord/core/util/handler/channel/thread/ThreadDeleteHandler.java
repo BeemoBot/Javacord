@@ -41,8 +41,6 @@ public class ThreadDeleteHandler extends PacketHandler {
             case SERVER_NEWS_THREAD:
                 handleServerThread(packet);
                 break;
-            default:
-                logger.warn("Unknown or unexpected channel type. Your Javacord version might be out of date!");
         }
     }
 

@@ -57,14 +57,10 @@ public class ChannelCreateHandler extends PacketHandler {
                 handleServerForumChannel(packet);
                 break;
             case SERVER_NEWS_CHANNEL:
-                logger.debug("Received CHANNEL_CREATE packet for a news channel. In this Javacord version it is "
-                        + "treated as a normal text channel!");
                 handleServerTextChannel(packet);
                 break;
             case SERVER_STORE_CHANNEL:
                 // TODO Handle store channels
-                logger.debug("Received CHANNEL_CREATE packet for a store channel. These are not supported in this"
-                        + " Javacord version and get ignored!");
                 break;
             case PRIVATE_CHANNEL:
                 handlePrivateChannel(packet);
@@ -92,9 +88,6 @@ public class ChannelCreateHandler extends PacketHandler {
     }
 
     private void showFallbackWarningMessage(int channelType, String fallbackName) {
-        logger.warn("Encountered not handled channel type: {}. "
-                        + "Trying to use the {} fallback implementation",
-                channelType, fallbackName);
     }
 
     /**

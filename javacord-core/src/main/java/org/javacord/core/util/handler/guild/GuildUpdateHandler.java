@@ -340,9 +340,6 @@ public class GuildUpdateHandler extends PacketHandler {
                     try {
                         newServerFeature.add(ServerFeature.valueOf(jsonNode.asText()));
                     } catch (Exception ignored) {
-                        logger.debug("Encountered server with unknown feature {}. Please update to the latest "
-                                + "Javacord version or create an issue on the Javacord GitHub page if you are already "
-                                + "on the latest version.", jsonNode.asText());
                     }
                 });
             }

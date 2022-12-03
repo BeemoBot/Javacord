@@ -73,9 +73,6 @@ public class LoggerUtil {
      * @param channelId The id of the missing channel.
      */
     public static void logMissingChannel(Logger logger, long channelId) {
-        logger.warn("Couldn't get the Channel with the id {} for a {}. Please update to the latest "
-                + "Javacord version or create an issue on the Javacord GitHub page if you are already "
-                + "on the latest version.", channelId, logger.getName());
     }
 
 }

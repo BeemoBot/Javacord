@@ -60,8 +60,6 @@ public class ChannelDeleteHandler extends PacketHandler {
                 break;
             case SERVER_STORE_CHANNEL:
                 // TODO Handle store channels
-                logger.debug("Received CHANNEL_DELETE packet for a store channel. These are not supported in this"
-                        + " Javacord version and get ignored!");
                 break;
             case GROUP_CHANNEL:
                 logger.info("Received CHANNEL_DELETE packet for a group channel. This should be impossible.");

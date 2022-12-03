@@ -103,16 +103,12 @@ public class ChannelUpdateHandler extends PacketHandler {
                 //handleServerForumChannel(packet);
                 break;
             case SERVER_NEWS_CHANNEL:
-                logger.debug("Received CHANNEL_UPDATE packet for a news channel. In this Javacord version it is "
-                        + "treated as a normal text channel!");
                 handleServerChannel(packet);
                 handleRegularServerChannel(packet);
                 handleServerTextChannel(packet);
                 break;
             case SERVER_STORE_CHANNEL:
                 // TODO Handle store channels
-                logger.debug("Received CHANNEL_UPDATE packet for a store channel. These are not supported in this"
-                        + " Javacord version and get ignored!");
                 break;
             case PRIVATE_CHANNEL:
                 handlePrivateChannel(packet);

@@ -72,9 +72,6 @@ public class RegularServerChannelImpl extends ServerChannelImpl implements Regul
                     case 1:
                         overwrittenUserPermissions.put(id, permissions);
                         break;
-                    default:
-                        LoggerUtil.getLogger(ServerChannelImpl.class).warn("Unknown type for permission_overwrites. "
-                                + "Your Javacord version might be outdated.");
                 }
             }
         }

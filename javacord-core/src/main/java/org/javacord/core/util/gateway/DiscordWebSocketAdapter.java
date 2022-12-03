@@ -589,8 +589,6 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
                 PacketHandler handler = handlers.get(type);
                 if (handler != null) {
                     handler.handlePacket(packetData);
-                } else {
-                    logger.debug("Received unknown packet of type {} (packet: {})", type, packet);
                 }
 
                 if (type.equals("GUILD_MEMBERS_CHUNK")) {

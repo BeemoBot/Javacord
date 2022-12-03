@@ -65,8 +65,6 @@ public class ThreadUpdateHandler extends PacketHandler {
             case SERVER_NEWS_THREAD:
                 handleThread(packet);
                 break;
-            default:
-                logger.warn("Unknown or unexpected channel type. Your Javacord version might be out of date!");
         }
     }
 
