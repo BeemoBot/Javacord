@@ -4,13 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.neovisionaries.ws.client.ProxySettings;
-import com.neovisionaries.ws.client.WebSocket;
-import com.neovisionaries.ws.client.WebSocketAdapter;
-import com.neovisionaries.ws.client.WebSocketException;
-import com.neovisionaries.ws.client.WebSocketFactory;
-import com.neovisionaries.ws.client.WebSocketFrame;
-import com.neovisionaries.ws.client.WebSocketListener;
+import com.neovisionaries.ws.client.*;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.Javacord;
 import org.javacord.api.entity.Nameable;
@@ -87,13 +81,7 @@ import org.javacord.core.util.rest.RestEndpoint;
 import org.javacord.core.util.rest.RestMethod;
 import org.javacord.core.util.rest.RestRequest;
 
-import java.net.InetSocketAddress;
-import java.net.PasswordAuthentication;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.net.URL;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -201,10 +189,11 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
         registerHandlers();
         connect();
 
-        rawHandlerExecutor = api.getThreadPool().getSingleDaemonThreadExecutorService("Raw Handlers Processor");
+        rawHandlerExecutor = api.getThreadPool()
+                .getSingleDaemonThreadExecutorService("Raw Handlers Processor - " + api.getShardString());
 
-        ExecutorService requestGuildMembersQueueConsumer =
-                api.getThreadPool().getSingleDaemonThreadExecutorService("Request Server Members Queue Consumer");
+        ExecutorService requestGuildMembersQueueConsumer = api.getThreadPool()
+                .getSingleDaemonThreadExecutorService("Request Server Members Queue Consumer - " + api.getShardString());
         requestGuildMembersQueueConsumer.submit(() -> {
             while (!requestGuildMembersQueueConsumer.isShutdown()) {
                 try {
@@ -238,8 +227,8 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
             }
         });
 
-        ExecutorService webSocketFrameSenderService =
-                api.getThreadPool().getSingleDaemonThreadExecutorService("Web Socket Frame Sender");
+        ExecutorService webSocketFrameSenderService = api.getThreadPool()
+                .getSingleDaemonThreadExecutorService("Web Socket Frame Sender - " + api.getShardString());
         webSocketFrameSenderService.submit(() -> {
             // remember the current thread to be able to interrupt it
             webSocketFrameSenderThread.set(Thread.currentThread());
@@ -623,7 +612,9 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
                     resumeUrl = packetData.hasNonNull("resume_gateway_url")
                             ? packetData.get("resume_gateway_url").asText() : null;
                     // Discord sends us GUILD_CREATE packets after logging in. We will wait for them.
-                    api.getThreadPool().getSingleThreadExecutorService("Startup Servers Wait Thread").submit(() -> {
+                    api.getThreadPool()
+                            .getSingleThreadExecutorService("Startup Servers Wait Thread - " + api.getShardString())
+                            .submit(() -> {
                         boolean allUsersLoaded = false;
                         boolean allServersLoaded = false;
                         int lastUnavailableServerAmount = 0;
@@ -1129,5 +1120,10 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
     @Override
     public void onConnectError(WebSocket websocket, WebSocketException exception) {
         logger.warn("Websocket onConnect error!", exception);
+    }
+
+    @Override
+    public void onThreadCreated(WebSocket websocket, ThreadType threadType, Thread thread) {
+        thread.setName(thread.getName() + " - " + api.getShardString());
     }
 }

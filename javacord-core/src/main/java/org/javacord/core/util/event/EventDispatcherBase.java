@@ -95,7 +95,8 @@ public abstract class EventDispatcherBase {
      */
     protected EventDispatcherBase(DiscordApiImpl api) {
         this.api = api;
-        this.dispatchExecutor = api.getThreadPool().getSingleThreadExecutorService("Event Dispatch Queues Manager");
+        this.dispatchExecutor = api.getThreadPool().getSingleThreadExecutorService(
+                "Event Dispatch Queues Manager - " + api.getShardString());
 
         api.getThreadPool().getScheduler().scheduleWithFixedDelay(() -> {
             try {

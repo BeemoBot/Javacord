@@ -2273,4 +2273,8 @@ public interface DiscordApi extends GloballyAttachableListenerManager {
      */
     void addRawListener(String type, RawPacketHandler handler);
 
+    default String getShardString() {
+        return "Shard " + getCurrentShard() + "/" + getTotalShards();
+    }
+
 }

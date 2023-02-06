@@ -73,8 +73,8 @@ public class Heart {
             if (!voice) {
                 api.setLatestGatewayLatencyNanos(gatewayLatency);
             }
-            stethoscope.debug("Heartbeat ACK received (voice: {}, packet: {}). Took {} ms to receive ACK",
-                    voice, packet, TimeUnit.NANOSECONDS.toMillis(gatewayLatency));
+            stethoscope.debug("Heartbeat ACK received ((shard: {}), voice: {}, packet: {}). Took {} ms to receive ACK",
+                    api.getShardString(), voice, packet, TimeUnit.NANOSECONDS.toMillis(gatewayLatency));
             heartbeatAckReceived.set(true);
         }
     }
@@ -97,14 +97,16 @@ public class Heart {
                     if (heartbeatAckReceived.getAndSet(false)) {
                         beat();
                     } else {
-                        stethoscope.debug("Heartbeat not answered properly, assuming zombie connection");
+                        stethoscope.debug("Heartbeat not answered properly, assuming zombie connection (shard: {})",
+                                api.getShardString());
                         closeFrameSender.accept(
                                 WebSocketCloseReason.HEARTBEAT_NOT_PROPERLY_ANSWERED.getNumericCloseCode(),
                                 WebSocketCloseReason.HEARTBEAT_NOT_PROPERLY_ANSWERED.getCloseReason());
                     }
                 } catch (Throwable t) {
                     // R.I.P.
-                    stethoscope.error("Failed to send heartbeat or close web socket!", t);
+                    stethoscope.error("Failed to send heartbeat or close web socket! (shard: {})",
+                            api.getShardString(), t);
                 }
             }, 0, interval, TimeUnit.MILLISECONDS);
         });
@@ -121,7 +123,8 @@ public class Heart {
         heartbeatFrameSender.accept(heartbeatFrame);
         lastHeartbeatSentTimeNanos = System.nanoTime();
         // Ba boom, ba boom, ba boom, ba boom, ...
-        stethoscope.debug("Sent heartbeat (voice: {}, packet: {})", voice, heartbeatPacket);
+        stethoscope.debug("Sent heartbeat (shard: {}, voice: {}, packet: {})",
+                api.getShardString(), voice, heartbeatPacket);
     }
 
     /**
