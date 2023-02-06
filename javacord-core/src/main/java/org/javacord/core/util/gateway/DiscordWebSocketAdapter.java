@@ -383,6 +383,8 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
     private void connect() {
         try {
             WebSocketFactory factory = new WebSocketFactory();
+            factory.setConnectionTimeout(1000 * 10);
+            factory.setSocketTimeout(1000 * 10);
 
             String webSocketUri = (resumeUrl != null ? resumeUrl : getGateway(api)) + "?encoding=json&v="
                     + Javacord.DISCORD_GATEWAY_VERSION;
@@ -696,6 +698,12 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
 
                 JsonNode data = packet.get("d");
                 int heartbeatInterval = data.get("heartbeat_interval").asInt();
+                try {
+                    websocket.getSocket().setSoTimeout(heartbeatInterval + 1000 * 10);
+                } catch (SocketException ex) {
+                    logger.warn("Couldn't set socket timeout to {} ms following a HELLO packet",
+                            heartbeatInterval, ex);
+                }
 
                 // calculate reserved places for heartbeats
                 webSocketFrameSendingLimit.set(WEB_SOCKET_FRAME_SENDING_RATELIMIT - 1 - (60_000 / heartbeatInterval));
@@ -978,7 +986,7 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
      * @param closeCode The close code for the close frame.
      */
     public void sendCloseFrame(WebSocket webSocket, int closeCode) {
-        sendLifecycleFrame(webSocket, WebSocketFrame.createCloseFrame(closeCode));
+        sendCloseFrame(webSocket, closeCode, null);
     }
 
     /**
@@ -999,7 +1007,9 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
      * @param reason The reason for the close frame.
      */
     public void sendCloseFrame(WebSocket webSocket, int closeCode, String reason) {
-        sendLifecycleFrame(webSocket, WebSocketFrame.createCloseFrame(closeCode, reason));
+        if (webSocket != null) {
+            webSocket.disconnect(closeCode, reason, 1000 * 2);
+        }
     }
 
     /**
