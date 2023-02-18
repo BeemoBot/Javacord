@@ -89,6 +89,20 @@ public interface DiscordApiBuilderDelegate {
     Optional<String> getToken();
 
     /**
+     * Sets the client id associated with this token.
+     *
+     * @param clientId The client id to set.
+     */
+    void setClientId(long clientId);
+
+    /**
+     * Gets the client id.
+     *
+     * @return The client id.
+     */
+    long getClientId();
+
+    /**
      * Sets the total shards.
      *
      * @param totalShards The total shards to set.
@@ -202,6 +216,13 @@ public interface DiscordApiBuilderDelegate {
      * @return Whether the user cache is enabled.
      */
     boolean isUserCacheEnabled();
+
+    /**
+     * Builds the api instance without logging in.
+     *
+     * @return The discord api instance.
+     */
+    DiscordApi build();
 
     /**
      * Logs the bot in.

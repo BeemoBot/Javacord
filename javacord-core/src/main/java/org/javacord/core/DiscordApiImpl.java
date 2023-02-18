@@ -167,6 +167,11 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
     private final ThreadPoolImpl threadPool = new ThreadPoolImpl();
 
     /**
+     * The shutdown hook for this instance.
+     */
+    private final Thread shutdownHookThread;
+
+    /**
      * The http client for this instance.
      */
     private final OkHttpClient httpClient;
@@ -195,6 +200,11 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * The websocket adapter used to connect to Discord.
      */
     private volatile DiscordWebSocketAdapter websocketAdapter = null;
+
+    /**
+     * The token used for authentication.
+     */
+    private volatile boolean isLoggingIn;
 
     /**
      * The token used for authentication.
@@ -317,6 +327,11 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * The user of the connected account.
      */
     private volatile User you;
+
+    /**
+     * The cached client id, or -1 if not set.
+     */
+    private volatile long clientId = -1;
 
     /**
      * The cached application info.
@@ -445,7 +460,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
     public DiscordApiImpl(String token, Ratelimiter globalRatelimiter, Ratelimiter gatewayIdentifyRatelimiter,
                           ProxySelector proxySelector, Proxy proxy, Authenticator proxyAuthenticator,
                           boolean trustAllCertificates) {
-        this(token, 0, 1, Collections.emptySet(), true, false, globalRatelimiter,
+        this(token, -1, 0, 1, Collections.emptySet(), true, false, globalRatelimiter,
                 gatewayIdentifyRatelimiter, proxySelector, proxy, proxyAuthenticator, trustAllCertificates, null);
     }
 
@@ -469,8 +484,6 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @param proxyAuthenticator         The authenticator that should be used to authenticate against proxies that
      *                                   require it.
      * @param trustAllCertificates       Whether to trust all SSL certificates.
-     * @param ready                      The future which will be completed when the connection to Discord was
-     *                                   successful.
      */
     public DiscordApiImpl(
             String token,
@@ -484,18 +497,18 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
             ProxySelector proxySelector,
             Proxy proxy,
             Authenticator proxyAuthenticator,
-            boolean trustAllCertificates,
-            CompletableFuture<DiscordApi> ready
+            boolean trustAllCertificates
     ) {
-        this(token, currentShard, totalShards, intents, waitForServersOnStartup, waitForUsersOnStartup,
+        this(token, -1, currentShard, totalShards, intents, waitForServersOnStartup, waitForUsersOnStartup,
                 true, globalRatelimiter, gatewayIdentifyRatelimiter, proxySelector, proxy, proxyAuthenticator,
-                trustAllCertificates, ready, null, Collections.emptyMap(), Collections.emptyList(), false, true, null);
+                trustAllCertificates, null, Collections.emptyMap(), Collections.emptyList(), false, true, null);
     }
 
     /**
      * Creates a new discord api instance.
      *
      * @param token                      The token used to connect without any account type specific prefix.
+     * @param clientId                   The client id associated with the token, or -1 if not provided.
      * @param currentShard               The current shard the bot should connect to.
      * @param totalShards                The total amount of shards.
      * @param intents                    The intents for the events which should be received.
@@ -512,13 +525,12 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @param proxyAuthenticator         The authenticator that should be used to authenticate against proxies that
      *                                   require it.
      * @param trustAllCertificates       Whether to trust all SSL certificates.
-     * @param ready                      The future which will be completed when the connection to Discord was
-     *                                   successful.
      * @param dns                        The DNS instance to use in the OkHttp client. This should only be used in
      *                                   testing.
      */
     private DiscordApiImpl(
             String token,
+            long clientId,
             int currentShard,
             int totalShards,
             Set<Intent> intents,
@@ -530,17 +542,17 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
             Proxy proxy,
             Authenticator proxyAuthenticator,
             boolean trustAllCertificates,
-            CompletableFuture<DiscordApi> ready,
             Dns dns) {
-        this(token, currentShard, totalShards, intents, waitForServersOnStartup, waitForUsersOnStartup,
+        this(token, clientId, currentShard, totalShards, intents, waitForServersOnStartup, waitForUsersOnStartup,
                 true, globalRatelimiter, gatewayIdentifyRatelimiter, proxySelector, proxy, proxyAuthenticator,
-                trustAllCertificates, ready, dns, Collections.emptyMap(), Collections.emptyList(), false, true, null);
+                trustAllCertificates, dns, Collections.emptyMap(), Collections.emptyList(), false, true, null);
     }
 
     /**
      * Creates a new discord api instance.
      *
      * @param token                      The token used to connect without any account type specific prefix.
+     * @param clientId                   The client id associated with the token, or -1 if not provided.
      * @param currentShard               The current shard the bot should connect to.
      * @param totalShards                The total amount of shards.
      * @param intents                    The intents for the events which should be received.
@@ -558,8 +570,6 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @param proxyAuthenticator         The authenticator that should be used to authenticate against proxies that
      *                                   require it.
      * @param trustAllCertificates       Whether to trust all SSL certificates.
-     * @param ready                      The future which will be completed when the connection to Discord was
-     *                                   successful.
      * @param dns                        The DNS instance to use in the OkHttp client. This should only be used in
      *                                   testing.
      * @param listenerSourceMap          The functions to create listeners for pre-registration.
@@ -571,6 +581,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
     @SuppressWarnings("unchecked")
     public DiscordApiImpl(
             String token,
+            long clientId,
             int currentShard,
             int totalShards,
             Set<Intent> intents,
@@ -583,7 +594,6 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
             Proxy proxy,
             Authenticator proxyAuthenticator,
             boolean trustAllCertificates,
-            CompletableFuture<DiscordApi> ready,
             Dns dns,
             Map<Class<? extends GloballyAttachableListener>,
                     List<Function<DiscordApi, GloballyAttachableListener>>
@@ -594,6 +604,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
             AllowedMentions defaultAllowedMentions
     ) {
         this.token = token;
+        this.clientId = clientId;
         this.currentShard = currentShard;
         this.totalShards = totalShards;
         this.waitForServersOnStartup = waitForServersOnStartup;
@@ -645,84 +656,88 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
         this.httpClient = httpClientBuilder.build();
         this.eventDispatcher = new EventDispatcher(this);
 
-        if (ready != null) {
-            getThreadPool().getExecutorService().submit(() -> {
-                try {
-                    this.websocketAdapter = new DiscordWebSocketAdapter(this);
-                    this.websocketAdapter.isReady().whenComplete((readyReceived, throwable) -> {
-                        if (readyReceived) {
-                            // Register listeners
-                            listenerSourceMap.forEach((clazz, listenerSources) ->
-                                    listenerSources.forEach(listenerSource -> {
-                                        Class<GloballyAttachableListener> type
-                                                = (Class<GloballyAttachableListener>) clazz;
-                                        GloballyAttachableListener listener = listenerSource.apply(this);
-                                        addListener(type, type.cast(listener));
-                                    }));
-                            unspecifiedListeners.stream()
-                                    .map(source -> source.apply(this))
-                                    .forEach(this::addListener);
-                            // Application information
-                            requestApplicationInfo().whenComplete((applicationInfo, exception) -> {
-                                if (exception != null) {
-                                    logger.error("Could not access self application info on startup!", exception);
-                                    threadPool.shutdown();
-                                    ready.completeExceptionally(exception);
-                                } else {
-                                    this.applicationInfo = applicationInfo;
-                                    ready.complete(this);
-                                }
-                            });
-                        } else {
-                            threadPool.shutdown();
-                            ready.completeExceptionally(
-                                    new IllegalStateException("Websocket closed before READY packet was received!"));
-                        }
-                    });
-                } catch (Throwable t) {
-                    if (websocketAdapter != null) {
-                        websocketAdapter.disconnect();
-                    }
-                    ready.completeExceptionally(t);
-                }
-            });
+        // Register listeners
+        listenerSourceMap.forEach((clazz, listenerSources) ->
+                listenerSources.forEach(listenerSource -> {
+                    Class<GloballyAttachableListener> type
+                            = (Class<GloballyAttachableListener>) clazz;
+                    GloballyAttachableListener listener = listenerSource.apply(this);
+                    addListener(type, type.cast(listener));
+                }));
+        unspecifiedListeners.stream()
+                .map(source -> source.apply(this))
+                .forEach(this::addListener);
 
-            // After minimum JDK 9 is required this can be switched to use a Cleaner
-            getThreadPool().getScheduler().scheduleWithFixedDelay(() -> {
-                messageCacheLock.lock();
-                try {
-                    for (Reference<? extends Message> messageRef = messagesCleanupQueue.poll();
-                            messageRef != null;
-                            messageRef = messagesCleanupQueue.poll()) {
-                        Long messageId = messageIdByRef.remove(messageRef);
-                        if (messageId != null) {
-                            messages.remove(messageId, messageRef);
-                        }
-                    }
-                } catch (Throwable t) {
-                    logger.error("Failed to process messages cleanup queue!", t);
-                } finally {
-                    messageCacheLock.unlock();
-                }
-            }, 30, 30, TimeUnit.SECONDS);
-
-            if (registerShutdownHook) {
-                // Add shutdown hook
-                ready.thenAccept(api -> {
-                    WeakReference<DiscordApi> discordApiReference = new WeakReference<>(api);
-                    Runtime.getRuntime().addShutdownHook(new Thread(() -> Optional.ofNullable(discordApiReference.get())
-                            .ifPresent(DiscordApi::disconnect),
-                            String.format("Javacord - Shutdown Disconnector (%s)", api)));
-                });
-            }
+        if (registerShutdownHook) {
+            WeakReference<DiscordApi> discordApiReference = new WeakReference<>(this);
+            shutdownHookThread = new Thread(() -> Optional.ofNullable(discordApiReference.get())
+                    .ifPresent(DiscordApi::disconnect),
+                    String.format("Javacord - Shutdown Disconnector (%s)", this));
+            Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         } else {
-            if (registerShutdownHook) {
-                WeakReference<DiscordApi> discordApiReference = new WeakReference<>(this);
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> Optional.ofNullable(discordApiReference.get())
-                        .ifPresent(DiscordApi::disconnect),
-                        String.format("Javacord - Shutdown Disconnector (%s)", this)));
-            }
+            shutdownHookThread = null;
         }
+    }
+
+    public CompletableFuture<DiscordApi> login() {
+        CompletableFuture<DiscordApi> ready = new CompletableFuture<>();
+        if (isLoggingIn) {
+            ready.completeExceptionally(
+                    new IllegalStateException("DiscordApi instance is already logged in or in the process of doing so"));
+            return ready;
+        }
+        isLoggingIn = true;
+
+        getThreadPool().getExecutorService().submit(() -> {
+            try {
+                this.websocketAdapter = new DiscordWebSocketAdapter(this);
+                this.websocketAdapter.isReady().whenComplete((readyReceived, throwable) -> {
+                    if (readyReceived) {
+                        // Application information
+                        requestApplicationInfo().whenComplete((applicationInfo, exception) -> {
+                            if (exception != null) {
+                                logger.error("Could not access self application info on startup!", exception);
+                                threadPool.shutdown();
+                                ready.completeExceptionally(exception);
+                            } else {
+                                this.applicationInfo = applicationInfo;
+                                ready.complete(this);
+                            }
+                        });
+                    } else {
+                        threadPool.shutdown();
+                        ready.completeExceptionally(
+                                new IllegalStateException("Websocket closed before READY packet was received!"));
+                    }
+                });
+            } catch (Throwable t) {
+                if (websocketAdapter != null) {
+                    websocketAdapter.disconnect();
+                }
+                ready.completeExceptionally(t);
+            }
+        });
+
+        // After minimum JDK 9 is required this can be switched to use a Cleaner
+        getThreadPool().getScheduler().scheduleWithFixedDelay(() -> {
+            messageCacheLock.lock();
+            try {
+                for (Reference<? extends Message> messageRef = messagesCleanupQueue.poll();
+                     messageRef != null;
+                     messageRef = messagesCleanupQueue.poll()) {
+                    Long messageId = messageIdByRef.remove(messageRef);
+                    if (messageId != null) {
+                        messages.remove(messageId, messageRef);
+                    }
+                }
+            } catch (Throwable t) {
+                logger.error("Failed to process messages cleanup queue!", t);
+            } finally {
+                messageCacheLock.unlock();
+            }
+        }, 30, 30, TimeUnit.SECONDS);
+
+        return ready;
     }
 
     /**
@@ -1702,6 +1717,10 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @return The websocket adapter.
      */
     public DiscordWebSocketAdapter getWebSocketAdapter() {
+        if (this.websocketAdapter == null) {
+            throw new NullPointerException(
+                    "There is no active connection to Discord yet. You may have to call DiscordApi#login() first.");
+        }
         return websocketAdapter;
     }
 
@@ -1848,7 +1867,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
             throw new IllegalArgumentException("The status cannot be null");
         }
         this.status = status;
-        websocketAdapter.updateStatus();
+        getWebSocketAdapter().updateStatus();
     }
 
     @Override
@@ -1872,7 +1891,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
         } else {
             activity = new ActivityImpl(type, name, streamingUrl);
         }
-        websocketAdapter.updateStatus();
+        getWebSocketAdapter().updateStatus();
     }
 
 
@@ -1907,6 +1926,14 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
     }
 
     @Override
+    public long getClientId() {
+        if (clientId != -1) {
+            return clientId;
+        }
+        return getCachedApplicationInfo().getClientId();
+    }
+
+    @Override
     public CompletableFuture<Void> disconnect() {
         boolean doDisconnect = false;
         synchronized (disconnectFuture) {
@@ -1933,7 +1960,15 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
                 threadPool.getDaemonScheduler().schedule(() -> {
                     threadPool.shutdown();
                     disconnectFuture.get().complete(null);
-                }, 1, TimeUnit.MINUTES);
+                }, 5, TimeUnit.SECONDS);
+            }
+            if (shutdownHookThread != null) {
+                try {
+                    // Attempt to remove previously registered shutdown hook
+                    Runtime.getRuntime().removeShutdownHook(shutdownHookThread);
+                } catch (IllegalStateException ignored) {
+                    // Can't remove hook because JVM shutdown in progress, ignore
+                }
             }
         }
         return disconnectFuture.get();
@@ -1954,6 +1989,10 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
 
     @Override
     public ApplicationInfo getCachedApplicationInfo() {
+        if (this.applicationInfo == null) {
+            throw new NullPointerException(
+                    "Current application info is not cached. You may have to call DiscordApi#login() first.");
+        }
         return this.applicationInfo;
     }
 

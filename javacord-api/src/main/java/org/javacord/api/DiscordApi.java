@@ -76,6 +76,13 @@ public interface DiscordApi extends GloballyAttachableListenerManager {
             Pattern.compile("\\\\(?<char>[^a-zA-Z0-9\\p{javaWhitespace}\\xa0\\u2007\\u202E\\u202F])");
 
     /**
+     * Log into Discord with this api instance.
+     *
+     * @return A Future that resolves once this instance has logged in.
+     */
+    CompletableFuture<DiscordApi> login();
+
+    /**
      * Gets the used token.
      *
      * @return The used token.
@@ -604,9 +611,7 @@ public interface DiscordApi extends GloballyAttachableListenerManager {
      * @return The client id of the application.
      * @see ApplicationInfo#getClientId()
      */
-    default long getClientId() {
-        return getCachedApplicationInfo().getClientId();
-    }
+    long getClientId();
 
     /**
      * Disconnects the bot.

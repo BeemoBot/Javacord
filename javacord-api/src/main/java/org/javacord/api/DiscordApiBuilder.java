@@ -35,6 +35,15 @@ public class DiscordApiBuilder implements ChainableGloballyAttachableListenerMan
     private final DiscordApiBuilderDelegate delegate = DelegateFactory.createDiscordApiBuilderDelegate();
 
     /**
+     * Builds the api instance without logging in.
+     *
+     * @return The created DiscordApi.
+     */
+    public DiscordApi build() {
+        return delegate.build();
+    }
+
+    /**
      * Login to the account with the given token.
      *
      * @return A {@link CompletableFuture} which contains the DiscordApi.
@@ -237,6 +246,30 @@ public class DiscordApiBuilder implements ChainableGloballyAttachableListenerMan
      */
     public Optional<String> getToken() {
         return delegate.getToken();
+    }
+
+    /**
+     * Sets the client id associated with the token.
+     * If this is not specified, it will be automatically fetched
+     * when logging into the api. This may be required to be set
+     * when using certain methods without being logged in.
+     *
+     * @param clientId The client id to set.
+     * @return The current instance in order to chain call methods.
+     */
+    public DiscordApiBuilder setClientId(long clientId) {
+        delegate.setClientId(clientId);
+        return this;
+    }
+
+    /**
+     * Gets the client id, or -1 if not set.
+     *
+     * @return The client id.
+     * @see #setClientId(long)
+     */
+    public long getClientId() {
+        return delegate.getClientId();
     }
 
     /**

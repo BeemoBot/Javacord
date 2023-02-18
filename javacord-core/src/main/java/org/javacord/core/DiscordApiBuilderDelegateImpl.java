@@ -92,6 +92,11 @@ public class DiscordApiBuilderDelegateImpl implements DiscordApiBuilderDelegate 
     private volatile String token = null;
 
     /**
+     * The client id associated with the token.
+     */
+    private volatile long clientId = -1;
+
+    /**
      * The current shard starting with <code>0</code>.
      */
     private final AtomicInteger currentShard = new AtomicInteger();
@@ -190,23 +195,29 @@ public class DiscordApiBuilderDelegateImpl implements DiscordApiBuilderDelegate 
 
 
     @Override
-    public CompletableFuture<DiscordApi> login() {
+    public DiscordApi build() {
         prepareListeners();
         logger.debug("Creating shard {} of {}", currentShard.get() + 1, totalShards.get());
-        CompletableFuture<DiscordApi> future = new CompletableFuture<>();
         if (token == null) {
-            future.completeExceptionally(new IllegalArgumentException("You cannot login without a token!"));
-            return future;
+            throw new IllegalArgumentException("You cannot login without a token!");
         }
         try (CloseableThreadContext.Instance closeableThreadContextInstance =
                      CloseableThreadContext.put("shard", Integer.toString(currentShard.get()))) {
-            new DiscordApiImpl(token, currentShard.get(), totalShards.get(), intents,
+            return new DiscordApiImpl(token, clientId, currentShard.get(), totalShards.get(), intents,
                     waitForServersOnStartup, waitForUsersOnStartup, registerShutdownHook, globalRatelimiter,
                     gatewayIdentifyRatelimiter, proxySelector, proxy, proxyAuthenticator, trustAllCertificates,
-                    future, null, preparedListeners, preparedUnspecifiedListeners, userCacheEnabled, dispatchEvents,
+                    null, preparedListeners, preparedUnspecifiedListeners, userCacheEnabled, dispatchEvents,
                     allowedMentions);
         }
-        return future;
+    }
+
+    @Override
+    public CompletableFuture<DiscordApi> login() {
+        DiscordApi api = build();
+        try (CloseableThreadContext.Instance closeableThreadContextInstance =
+                     CloseableThreadContext.put("shard", Integer.toString(currentShard.get()))) {
+            return api.login();
+        }
     }
 
     /**
@@ -326,6 +337,16 @@ public class DiscordApiBuilderDelegateImpl implements DiscordApiBuilderDelegate 
     @Override
     public Optional<String> getToken() {
         return Optional.ofNullable(token);
+    }
+
+    @Override
+    public void setClientId(long clientId) {
+        this.clientId = clientId;
+    }
+
+    @Override
+    public long getClientId() {
+        return clientId;
     }
 
     @Override
