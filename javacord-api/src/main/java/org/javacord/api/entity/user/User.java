@@ -316,6 +316,10 @@ public interface User extends DiscordEntity, Messageable, Nameable, Mentionable,
      * @return The discriminated name of the user.
      */
     default String getDiscriminatedName() {
+        String discriminator = getDiscriminator();
+        if (discriminator.equals("0")) {
+            return "@" + getName();
+        }
         return getName() + "#" + getDiscriminator();
     }
 

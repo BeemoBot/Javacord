@@ -56,7 +56,12 @@ public interface MessageAuthor extends DiscordEntity, Nameable {
      * @return The discriminated name of the user or the name of the author.
      */
     default String getDiscriminatedName() {
-        return getDiscriminator().map(discriminator -> getName() + "#" + discriminator).orElseGet(this::getName);
+        return getDiscriminator().map(discriminator -> {
+            if (discriminator.equals("0")) {
+                return "@" + getName();
+            }
+            return getName() + "#" + discriminator;
+        }).orElseGet(this::getName);
     }
 
     /**

@@ -33,6 +33,10 @@ public interface ApplicationOwner extends DiscordEntity, Nameable {
      * @return The owner's discriminated name.
      */
     default String getDiscriminatedName() {
+        String discriminator = getDiscriminator();
+        if (discriminator.equals("0")) {
+            return "@" + getName();
+        }
         return getName() + "#" + getDiscriminator();
     }
 
