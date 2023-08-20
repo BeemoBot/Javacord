@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.javacord.api.Javacord;
 import org.javacord.api.entity.Nameable;
 import org.javacord.api.entity.activity.Activity;
+import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.channel.ServerVoiceChannel;
 import org.javacord.api.entity.intent.Intent;
 import org.javacord.api.entity.server.Server;
@@ -936,7 +937,7 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
      * Sends the update status packet.
      */
     public void updateStatus() {
-        Optional<Activity> activity = api.getActivity();
+        Optional<Activity> optionalActivity = api.getActivity();
         ObjectNode updateStatus = JsonNodeFactory.instance.objectNode()
                 .put("op", GatewayOpcode.STATUS_UPDATE.getCode());
         ObjectNode data = updateStatus.putObject("d")
@@ -945,18 +946,21 @@ public class DiscordWebSocketAdapter extends WebSocketAdapter {
                 .putNull("since");
 
         ObjectNode activityJson = data.putObject("game");
-        activityJson.put("name", activity.map(Nameable::getName).orElse(null));
-        activityJson.put("type", activity.flatMap(g -> {
-            int type = g.getType().getId();
-            if (type == 4) {
-                logger.warn("Can't set the activity to ActivityType.CUSTOM"
-                        + ", using ActivityType.PLAYING instead");
-                return Optional.empty();
+        if (optionalActivity.isPresent()) {
+            Activity activity = optionalActivity.get();
+            ActivityType type = activity.getType();
+            activityJson.put("type", type.getId());
+            if (type == ActivityType.CUSTOM) {
+                activityJson.put("name", "Custom Status");
+                activityJson.put("state", activity.getName());
             } else {
-                return Optional.of(type);
+                activityJson.put("name", activity.getName());
             }
-        }).orElse(0));
-        activity.flatMap(Activity::getStreamingUrl).ifPresent(url -> activityJson.put("url", url));
+            activity.getStreamingUrl().ifPresent(url -> activityJson.put("url", url));
+        } else {
+            activityJson.put("name", (String) null);
+            activityJson.put("type", 0);
+        }
         logger.debug("Updating status (content: {})", updateStatus);
         sendTextFrame(updateStatus.toString());
     }
