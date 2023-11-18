@@ -120,23 +120,6 @@ public class MessageCacheImpl implements MessageCache, Cleanupable {
      * @param message The message to add.
      */
     public void addMessage(Message message) {
-        api.getMessageCacheLock().lock();
-        try {
-            api.addMessageToCache(message);
-            if (messages.stream().map(Reference::get).anyMatch(message::equals)) {
-                return;
-            }
-            // Add the message in the correct order
-            messages.removeIf(messageRef -> messageRef.get() == null);
-            Reference<Message> messageRef = new SoftReference<>(message, messagesCleanupQueue);
-            int pos = Collections.binarySearch(messages, messageRef, Comparator.comparing(Reference::get));
-            if (pos < 0) {
-                pos = -pos - 1;
-            }
-            messages.add(pos, messageRef);
-        } finally {
-            api.getMessageCacheLock().unlock();
-        }
     }
 
     /**

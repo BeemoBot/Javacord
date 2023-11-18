@@ -1142,8 +1142,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @return The emoji for the given json object.
      */
     public KnownCustomEmoji getOrCreateKnownCustomEmoji(Server server, JsonNode data) {
-        long id = Long.parseLong(data.get("id").asText());
-        return customEmojis.computeIfAbsent(id, key -> new KnownCustomEmojiImpl(this, server, data));
+        return new KnownCustomEmojiImpl(this, server, data);
     }
 
     /**
@@ -1188,8 +1187,7 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @return The created sticker.
      */
     public Sticker getOrCreateSticker(JsonNode data) {
-        long id = data.get("id").asLong();
-        return stickers.computeIfAbsent(id, key -> new StickerImpl(this, data));
+        return new StickerImpl(this, data);
     }
 
     /**
@@ -1236,19 +1234,6 @@ public class DiscordApiImpl implements DiscordApi, DispatchQueueSelector {
      * @param message The message to add.
      */
     public void addMessageToCache(Message message) {
-        messageCacheLock.lock();
-        try {
-            messages.compute(message.getId(), (key, value) -> {
-                if ((value == null) || (value.get() == null)) {
-                    WeakReference<Message> result = new WeakReference<>(message, messagesCleanupQueue);
-                    messageIdByRef.put(result, key);
-                    return result;
-                }
-                return value;
-            });
-        } finally {
-            messageCacheLock.unlock();
-        }
     }
 
     /**

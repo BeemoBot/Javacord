@@ -503,20 +503,6 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
             api.getWebSocketAdapter().queueRequestGuildMembers(this);
         }
 
-        if (data.has("emojis")) {
-            for (JsonNode emojiJson : data.get("emojis")) {
-                KnownCustomEmoji emoji = api.getOrCreateKnownCustomEmoji(this, emojiJson);
-                addCustomEmoji(emoji);
-            }
-        }
-
-        if (data.has("stickers")) {
-            for (JsonNode stickerJson : data.get("stickers")) {
-                Sticker sticker = api.getOrCreateSticker(stickerJson);
-                addSticker(sticker);
-            }
-        }
-
         if (data.has("presences")) {
             for (JsonNode presenceJson : data.get("presences")) {
                 long userId = Long.parseLong(presenceJson.get("user").get("id").asText());
@@ -775,7 +761,6 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
      * @param emoji The emoji to add.
      */
     public void addCustomEmoji(KnownCustomEmoji emoji) {
-        customEmojis.add(emoji);
     }
 
     /**
@@ -2132,7 +2117,6 @@ public class ServerImpl implements Server, Cleanupable, InternalServerAttachable
      * @param sticker The sticker to add to the server's cache.
      */
     public void addSticker(Sticker sticker) {
-        stickers.put(sticker.getId(), sticker);
     }
 
     /**
